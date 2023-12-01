@@ -3,9 +3,17 @@ import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
+interface ReadableStream<R = any> {
+  [Symbol.asyncIterator](): AsyncIterableIterator<R>;
+}
+
 export default function Home() {
-  const [data, setData] = useState<string[]>([]);
-  console.log(data, "raw data");
+  const [justForTodayData, setJustForTodayData] = useState<string[]>([]);
+  const [dailyReflectionsData, setDailyReflectionsData] = useState<string[]>(
+    [],
+  );
+
+  console.log(dailyReflectionsData, "the fuc");
 
   function _removeNonBreakingWhiteSpaces(stringElement: string[]) {
     return stringElement.map((item: string) => {
@@ -14,6 +22,10 @@ export default function Home() {
         return parts;
       }
     });
+  }
+
+  function replaceEncodedQuotObjects(stringElement: string) {
+    return stringElement.replace(/&quot;/g, '"');
   }
 
   function _extractDateObjectAndParseInSeparateElement(
@@ -73,12 +85,22 @@ export default function Home() {
   }
 
   const fetchData = async () => {
-    const res = await fetch("/api/hello");
-    const json = await res.json();
+    const jftRes = await fetch("/api/just-for-today");
+    const json = await jftRes.json();
     const arr: any[] = [];
     const htmlArray = json.content;
     const cats = getArrayOfStringsFromHtml(htmlArray, arr);
-    setData(cats[0][0]);
+    setJustForTodayData(cats[0][0]);
+    const dailyRefRes = await fetch("/api/daily-reflections");
+    const dailyRefResJson = await dailyRefRes.json();
+    console.log(dailyRefResJson, "jsonss");
+    const dailyRefArr: any[] = [];
+    let objArray: string[] = dailyRefResJson.data.map(
+      (value: string, index: number) => {
+        return { key: index, value: value };
+      },
+    );
+    setDailyReflectionsData(objArray);
   };
   useEffect(() => {
     const init = async () => {
@@ -93,7 +115,7 @@ export default function Home() {
       <div
         className={`mb-32 grid text-center lg:max-w-3xl lg:w-full lg:mb-0 lg:grid-cols-1 lg:text-left group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30`}
       >
-        {data.map((value: string, index: number) => {
+        {justForTodayData.map((value: string, index: number) => {
           return (
             <>
               <p
@@ -105,6 +127,27 @@ export default function Home() {
             </>
           );
         })}
+      </div>
+      <div
+        className={`mb-32 grid text-center lg:max-w-3xl lg:w-full lg:mb-0 lg:grid-cols-1 lg:text-left group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30`}
+      >
+        {dailyReflectionsData ? (
+          dailyReflectionsData.map((value: string, index: number) => {
+            console.log(value, "value");
+            return (
+              <>
+                <p
+                  key={index}
+                  className={`m-0 mb-10 text-center text-lg opacity-60`}
+                >
+                  {value.value}
+                </p>
+              </>
+            );
+          })
+        ) : (
+          <>Loading...</>
+        )}
       </div>
 
       <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
